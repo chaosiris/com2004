@@ -79,10 +79,19 @@ def process_training_data(fvectors_train: np.ndarray, labels_train: np.ndarray) 
     # The design of this is entirely up to you.
     # Note, if you are using an instance based approach, e.g. a nearest neighbour,
     # then the model will need to store the dimensionally-reduced training data and labels.
-    model = {}
-    model["labels_train"] = labels_train.tolist()
+
+    # Initialize model dictionary with the given paramteres
+    model = {
+        'fvectors_train': fvectors_train,
+        'labels_train': labels_train
+    }
+
+    # Pass feature vectors to reduced_dimensions function
     fvectors_train_reduced = reduce_dimensions(fvectors_train, model)
-    model["fvectors_train"] = fvectors_train_reduced.tolist()
+
+    # Update model dictionary with dimensionally-reduced feature vectors
+    model['fvectors_train'] = fvectors_train_reduced
+
     return model
 
 

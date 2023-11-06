@@ -100,7 +100,7 @@ def process_training_data(fvectors_train: np.ndarray, labels_train: np.ndarray) 
     # Note, if you are using an instance based approach, e.g. a nearest neighbour,
     # then the model will need to store the dimensionally-reduced training data and labels.
 
-    # Initialize model dictionary with the given paramteres
+    # Initialize model dictionary with the given parameters
     model = {
         'fvectors_train': fvectors_train,
         'labels_train': labels_train
@@ -111,6 +111,10 @@ def process_training_data(fvectors_train: np.ndarray, labels_train: np.ndarray) 
 
     # Update model dictionary with dimensionally-reduced feature vectors
     model['fvectors_train'] = fvectors_train_reduced
+
+    # Convert model dictionary to list to circumvent "not JSON serializable" error
+    for key, value in model.items():
+        model[key] = value.tolist()
 
     return model
 

@@ -57,8 +57,28 @@ def reduce_dimensions(data: np.ndarray, model: dict) -> np.ndarray:
     Returns:
         np.ndarray: The reduced feature vectors.
     """
+    # The chosen dimensionality reduction method is PCA (Principal Components Analysis)
+    # First, calculate the empirical mean of the dataset using NumPy
+    empirical_mean = np.mean(data, axis=0)
 
-    reduced_data = data[:, 0:N_DIMENSIONS]
+    # Transpose the data array to obtain the covariance matrix
+    cov_matrix = np.cov(data.T)
+
+    # Derive the eigenvalues and eigenvectors of the covariance matrix
+    eigenvalues, eigenvectors = np.linalg.eigh(cov_matrix)
+
+    # Sort the columns of the eigenvector matrices in order of decreasing eigenvalue (high to low variance)
+    sorted_eigenvectors = np.argsort(eigenvalues)[::-1]
+
+    # Derive the principal components up to N_DIMENSIONS
+    principal_components = eigenvectors[:, sorted_eigenvectors[:N_DIMENSIONS]]
+    
+    # Update the model dictionary with the calculated mean and feature components
+    model['mean'] = empirical_mean
+    model['components'] = principal_components
+    
+    # Perform dimensionality reduction using dot product of centred input and derived principal components
+    reduced_data = np.dot(data - empirical_mean, principal_components)
     return reduced_data
 
 

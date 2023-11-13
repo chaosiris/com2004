@@ -22,9 +22,16 @@ Since the variance of principal components is cumulative, with each subsequent c
 
 During my research, I have come across another algorithm/model known as **LDA (Linear Discriminant Analysis)** which claims to have higher classification accuracy compared to PCA, as it is a **supervised method** of data training (unlike **PCA which is unsupervised**). Unfortunately, it is significantly harder to implement in Python without the scikit-learn package and most likely will have relatively lower efficiency, therefore I decided to implement PCA as it is more suited towards the context of this assignment.
 
+**Note:** Since **`reduce_dimensions`** is called in both **`process_training_data`** and **`evaluate`** functions, an if-else block is required to prevent the model dictionary of existing trained data from being overwritten during the evaluation phase.
+
+### <ins>3\. classify</ins>
+
+Once the training feature vectors have been reduced, we can apply labels to each test feature vector based on the **k-Nearest Neighbour (k-NN)** algorithm. In order to accomplish this, we iterate through each test feature vector and calculate the shortest **Euclidean distance** to its surrounding feature vectors. Thus, the nearest training feature vector is selected and the test feature vector is labeled accordingly (e.g. R for white rook) and returned as a string array representing each square in all 25 chess images used for testing (**25 \* 64 = 1600** values in the array). This function is then called in the **`classify_squares`** and `classify_boards` functions, and the labeling accuracy is calculated by comparing the returned string array to the pre-existing data in `boards.dev.json`. 
+
 ## <ins>**External References**</ins>
 
 1.  **[Principal Component Analysis (PCA)](https://en.wikipedia.org/wiki/Principal_component_analysis) - Wikipedia**
 2.  **[Data Analysis 6: Principal Component Analysis (PCA)](https://www.youtube.com/watch?v=TJdH6rPA-TI "Data Analysis 6: Principal Component Analysis (PCA) - Computerphile") - Computerphile (YouTube)**
 3.  **[Machine Learning Tutorial Python - 19: Principal Component Analysis (PCA) with Python Code](https://www.youtube.com/watch?v=8klqIM9UvAc "Machine Learning Tutorial Python - 19: Principal Component Analysis (PCA) with Python Code") - codebasics (YouTube)**
 4.  **[PCA : the math - step-by-step with a simple example](https://www.youtube.com/watch?v=S51bTyIwxFs "PCA : the math - step-by-step with a simple example") - TileStats (YouTube)**
+5.  **[Scipy Documentation](https://docs.scipy.org/doc/scipy/reference/main_namespace.html)**

@@ -11,6 +11,7 @@ version: v1.0
 from typing import List
 
 import numpy as np
+import scipy as sp
 
 N_DIMENSIONS = 10
 
@@ -31,8 +32,21 @@ def classify(train: np.ndarray, train_labels: np.ndarray, test: np.ndarray) -> L
     Returns:
         list[str]: A list of one-character strings representing the labels for each square.
     """
-    n_images = test.shape[0]
-    return ["."] * n_images
+    # Initialize empty list to store string of labels for each square
+    label_list = []
+
+    for test_fvector in test:
+        # Calculate Euclidean distance between training and each test feature vector using scipy
+        dist = sp.spatial.distance.cdist(train, [test_fvector], 'euclidean')
+
+        # By logic of k-Nearest Neighbours algorithm, find the nearest training feature vector
+        knn = np.argmin(dist)
+        
+        # Append nearest neighbour to label list (test feature vector is therefore labeled)
+        label_list.append(train_labels[knn])
+
+    # Return list of labeled test data
+    return label_list
 
 
 # The functions below must all be provided in your solution. Think of them
@@ -58,24 +72,29 @@ def reduce_dimensions(data: np.ndarray, model: dict) -> np.ndarray:
         np.ndarray: The reduced feature vectors.
     """
     # The chosen dimensionality reduction method is PCA (Principal Components Analysis)
-    # First, calculate the empirical mean of the dataset using NumPy
-    empirical_mean = np.mean(data, axis=0)
+    if 'mean' and 'components' not in model:
+        # First, calculate the empirical mean of the dataset using NumPy
+        empirical_mean = np.mean(data, axis=0)
 
-    # Transpose the data array to obtain the covariance matrix
-    cov_matrix = np.cov(data.T)
+        # Transpose the data array to obtain the covariance matrix
+        cov_matrix = np.cov(data.T)
 
-    # Derive the eigenvalues and eigenvectors of the covariance matrix
-    eigenvalues, eigenvectors = np.linalg.eigh(cov_matrix)
+        # Derive the eigenvalues and eigenvectors of the covariance matrix
+        eigenvalues, eigenvectors = np.linalg.eigh(cov_matrix)
 
-    # Sort the columns of the eigenvector matrices in order of decreasing eigenvalue (high to low variance)
-    sorted_eigenvectors = np.argsort(eigenvalues)[::-1]
+        # Sort the columns of the eigenvector matrices in order of decreasing eigenvalue (high to low variance)
+        sorted_eigenvectors = np.argsort(eigenvalues)[::-1]
 
-    # Derive the principal components up to N_DIMENSIONS
-    principal_components = eigenvectors[:, sorted_eigenvectors[:N_DIMENSIONS]]
-    
-    # Update the model dictionary with the calculated mean and feature components
-    model['mean'] = empirical_mean
-    model['components'] = principal_components
+        # Derive the principal components up to N_DIMENSIONS
+        principal_components = eigenvectors[:, sorted_eigenvectors[:N_DIMENSIONS]]
+        
+        # Update the model dictionary with the calculated mean and feature components
+        model['mean'] = empirical_mean
+        model['components'] = principal_components
+    else:
+        # Set model dictionary in evaluate() to previously computed values from process_training_data()
+        empirical_mean = model['mean']
+        principal_components = model['components']
     
     # Perform dimensionality reduction using dot product of centred input and derived principal components
     reduced_data = np.dot(data - empirical_mean, principal_components)
@@ -106,7 +125,7 @@ def process_training_data(fvectors_train: np.ndarray, labels_train: np.ndarray) 
         'labels_train': labels_train
     }
 
-    # Pass feature vectors to reduced_dimensions function
+    # Pass feature vectors to reduce_dimensions()
     fvectors_train_reduced = reduce_dimensions(fvectors_train, model)
 
     # Update model dictionary with dimensionally-reduced feature vectors

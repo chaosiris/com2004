@@ -79,7 +79,9 @@ def reduce_dimensions(data: np.ndarray, model: dict) -> np.ndarray:
     Returns:
         np.ndarray: The reduced feature vectors.
     """
-    # The chosen dimensionality reduction method is PCA (Principal Components Analysis)
+    # The chosen dimensionality reduction method is PCA (Principal Components Analysis)\
+    print("Running PCA dimensionality reduction algorithm...")
+
     if 'mean' and 'components' not in model:
         # First, calculate the empirical mean of the dataset using NumPy
         empirical_mean = np.mean(data, axis=0)
@@ -182,6 +184,7 @@ def classify_squares(fvectors_test: np.ndarray, model: dict) -> List[str]:
     """
 
     # Get some data out of the model. It's up to you what you've stored in here
+    # print("Classifying test feature vectors (in square mode)...")
     fvectors_train = np.array(model["fvectors_train"])
     labels_train = np.array(model["labels_train"])
 
@@ -208,5 +211,28 @@ def classify_boards(fvectors_test: np.ndarray, model: dict) -> List[str]:
     Returns:
         list[str]: A list of one-character strings representing the labels for each square.
     """
-
-    return classify_squares(fvectors_test, model)
+    # print("Classifying test feature vectors (in board mode)...")
+    label_list = classify_squares(fvectors_test, model)
+    board_list = np.array_split(label_list, 25)
+    
+    for indexBoard, board in enumerate(board_list):
+        for indexPiece, piece in enumerate(board):
+            counts = Counter(board)
+            # if counts['K'] > 1 or counts['k'] > 1 or counts['Q'] > 1 or counts['q'] > 1 or counts['R'] > 2 or counts['r'] > 2 or counts['N'] > 2 or counts['n'] > 2 or counts['B'] > 2 or counts['b'] > 2 or counts['P'] > 8 or counts['p'] > 8:
+            if counts['R'] > 2 and piece == 'R':
+                label_list[64 * indexBoard + indexPiece] = 'p'
+                board[indexPiece] = "p"
+            if counts['N'] > 2 and piece == 'N':
+                label_list[64 * indexBoard + indexPiece] = 'R'
+                board[indexPiece] = "R"
+            if counts['R'] > 2 and piece == 'R':
+                label_list[64 * indexBoard + indexPiece] = 'B'
+                board[indexPiece] = "B"
+            if counts['K'] > 2 and piece == 'K':
+                label_list[64 * indexBoard + indexPiece] = 'q'
+                board[indexPiece] = "q"
+            if counts['P'] > 8 and piece == 'P':
+                label_list[64 * indexBoard + indexPiece] = 'B'
+                board[indexPiece] = "B"
+    
+    return label_list

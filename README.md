@@ -26,7 +26,9 @@ During my research, I have come across another algorithm/model known as **LDA (L
 
 ### <ins>3\. classify</ins>
 
-Once the training feature vectors have been reduced, we can apply labels to each test feature vector based on the **k-Nearest Neighbour (k-NN)** algorithm. In order to accomplish this, we iterate through each test feature vector and calculate the shortest **Euclidean distance** to its surrounding feature vectors. Thus, the nearest training feature vector is selected and the test feature vector is labeled accordingly (e.g. R for white rook) and returned as a string array representing each square in all 25 chess images used for testing (**25 \* 64 = 1600** values in the array). This function is then called in the **`classify_squares`** and `classify_boards` functions, and the labeling accuracy is calculated by comparing the returned string array to the pre-existing data in `boards.dev.json`. 
+Once the training feature vectors have been reduced, we can apply labels to each test feature vector based on the **k-Nearest Neighbour (k-NN)** algorithm. In order to accomplish this, we iterate through each test feature vector and calculate the shortest **Euclidean distance** to its surrounding feature vectors. Thus, the nearest training feature vector is selected and the test feature vector is labeled accordingly (e.g. R for white rook) and returned as a string array representing each square in all 25 chess images used for testing (**25 \* 64 = 1600** values in the array). This function is then called in the **`classify_squares`** and **`classify_boards`** functions, and the labeling accuracy is calculated by comparing the returned string array to the pre-existing data in `boards.dev.json`.
+
+In the second version, I have improved upon the k-NN algorithm used by taking the nearest 5 neighbouring training feature vectors into consideration, as represented by the **N\_NEIGHBOURS constant**. Upon further testing, I have found that **N\_NEIGHBOURS = 5** gives the **highest accuracy percentage** among N\_NEIGHBOURS = 1 to 10, hence I have finalized my code on this value. Additionally, I have used the **Counter** instance from Python's default **collections** library to determine the most common neighbouring training feature vector, in order to select the final k-NN value based on the majority.
 
 ## <ins>**External References**</ins>
 
@@ -34,4 +36,5 @@ Once the training feature vectors have been reduced, we can apply labels to each
 2.  **[Data Analysis 6: Principal Component Analysis (PCA)](https://www.youtube.com/watch?v=TJdH6rPA-TI "Data Analysis 6: Principal Component Analysis (PCA) - Computerphile") - Computerphile (YouTube)**
 3.  **[Machine Learning Tutorial Python - 19: Principal Component Analysis (PCA) with Python Code](https://www.youtube.com/watch?v=8klqIM9UvAc "Machine Learning Tutorial Python - 19: Principal Component Analysis (PCA) with Python Code") - codebasics (YouTube)**
 4.  **[PCA : the math - step-by-step with a simple example](https://www.youtube.com/watch?v=S51bTyIwxFs "PCA : the math - step-by-step with a simple example") - TileStats (YouTube)**
-5.  **[Scipy Documentation](https://docs.scipy.org/doc/scipy/reference/main_namespace.html)**
+5.  **[Scipy Documentation](https://docs.scipy.org/doc/scipy/reference/main_namespace.html) - Official Scipy Documentation**
+6.  **[Python Documentation - collections.Counter](https://docs.python.org/3/library/collections.html#collections.Counter) - Official Python Documentation**

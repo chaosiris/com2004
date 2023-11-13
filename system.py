@@ -9,11 +9,13 @@ produce a very poor result.
 version: v1.0
 """
 from typing import List
+from collections import Counter
 
 import numpy as np
 import scipy as sp
 
 N_DIMENSIONS = 10
+N_NEIGHBOURS = 5
 
 
 def classify(train: np.ndarray, train_labels: np.ndarray, test: np.ndarray) -> List[str]:
@@ -37,13 +39,19 @@ def classify(train: np.ndarray, train_labels: np.ndarray, test: np.ndarray) -> L
 
     for test_fvector in test:
         # Calculate Euclidean distance between training and each test feature vector using scipy
-        dist = sp.spatial.distance.cdist(train, [test_fvector], 'euclidean')
+        dist = sp.spatial.distance.cdist(train, [test_fvector], 'euclidean').flatten()
 
-        # By logic of k-Nearest Neighbours algorithm, find the nearest training feature vector
-        knn = np.argmin(dist)
+        # By logic of k-Nearest Neighbours algorithm, find the nearest 5 training feature vectors
+        nearest_neighbours = np.argsort(dist)[:N_NEIGHBOURS]
+
+        # Create list containing the labels of nearest 5 neighbouring vectors
+        nearest_labels = train_labels[nearest_neighbours]
+
+        # Determine the label via aggregate majority in the previously created list
+        knn = Counter(nearest_labels).most_common(1)[0][0]
         
-        # Append nearest neighbour to label list (test feature vector is therefore labeled)
-        label_list.append(train_labels[knn])
+        # Append likeliest label to initial list (test feature vector is therefore labeled)
+        label_list.append(knn)
 
     # Return list of labeled test data
     return label_list

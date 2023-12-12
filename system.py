@@ -2,9 +2,8 @@
 
 Solution outline for the COM2004/3004 assignment.
 
-This solution will run but the dimensionality reduction and
-the classifier are not doing anything useful, so it will
-produce a very poor result.
+Authored by Li Hao Yow @ 12/12/2023 (Final Edit)
+Default template provided by Dr Matthew Ellis and Dr Po Yang.
 
 version: v1.0
 """
@@ -15,10 +14,9 @@ import numpy as np
 import scipy as sp
 
 N_DIMENSIONS = 10
-N_NEIGHBOURS = 5
+N_NEIGHBOURS = 7
 
-
-def classify(train: np.ndarray, train_labels: np.ndarray, test: np.ndarray) -> List[str]:
+def classify(train: np.ndarray, train_labels: np.ndarray, test: np.ndarray, second_nearest: bool) -> List[str]:
     """Classify a set of feature vectors using a training set.
 
     This dummy implementation simply returns the empty square label ('.')
@@ -38,7 +36,7 @@ def classify(train: np.ndarray, train_labels: np.ndarray, test: np.ndarray) -> L
     label_list = []
 
     for test_fvector in test:
-        # Calculate Euclidean distance between training and each test feature vector using scipy
+        # Calculate Euclidean distance between training and each test feature vector using SciPy
         dist = sp.spatial.distance.cdist(train, [test_fvector], 'euclidean').flatten()
 
         # By logic of k-Nearest Neighbours algorithm, find the nearest 5 training feature vectors
@@ -47,10 +45,15 @@ def classify(train: np.ndarray, train_labels: np.ndarray, test: np.ndarray) -> L
         # Create list containing the labels of nearest 5 neighbouring vectors
         nearest_labels = train_labels[nearest_neighbours]
 
-        # Determine the label via aggregate majority in the previously created list
-        knn = Counter(nearest_labels).most_common(1)[0][0]
+        # Determine the label via aggregate majority in nearest_labels
+        if second_nearest:
+            # Return second most common label
+            knn = Counter(nearest_labels).most_common(2)[-1][0]
+        else:
+             # Return most common label
+            knn = Counter(nearest_labels).most_common(1)[0][0]
         
-        # Append likeliest label to initial list (test feature vector is therefore labeled)
+        # Append second most/most common label to initial list (test feature vector is therefore labeled)
         label_list.append(knn)
 
     # Return list of labeled test data
@@ -143,7 +146,8 @@ def process_training_data(fvectors_train: np.ndarray, labels_train: np.ndarray) 
 
     # Convert model dictionary to list to circumvent "not JSON serializable" error
     for key, value in model.items():
-        model[key] = value.tolist()
+        if isinstance(value, np.ndarray):
+            model[key] = value.tolist()
 
     return model
 
@@ -163,10 +167,14 @@ def images_to_feature_vectors(images: List[np.ndarray]) -> np.ndarray:
     n_features = h * w
     fvectors = np.empty((len(images), n_features))
     for i, image in enumerate(images):
-        fvectors[i, :] = image.reshape(1, n_features)
+        # Apply Gaussian smoothing and median filtering (preprocessing steps using SciPy)
+        filtered_image = sp.ndimage.gaussian_filter(image, sigma=1.0)
+        median_filtered_image = sp.ndimage.median_filter(filtered_image, size=3)
+
+        # Add preprocessed image to fvector list
+        fvectors[i, :] = median_filtered_image.ravel()
 
     return fvectors
-
 
 def classify_squares(fvectors_test: np.ndarray, model: dict) -> List[str]:
     """Run classifier on a array of image feature vectors presented in an arbitrary order.
@@ -189,7 +197,7 @@ def classify_squares(fvectors_test: np.ndarray, model: dict) -> List[str]:
     labels_train = np.array(model["labels_train"])
 
     # Call the classify function.
-    labels = classify(fvectors_train, labels_train, fvectors_test)
+    labels = classify(fvectors_train, labels_train, fvectors_test, False)
 
     return labels
 
@@ -211,28 +219,38 @@ def classify_boards(fvectors_test: np.ndarray, model: dict) -> List[str]:
     Returns:
         list[str]: A list of one-character strings representing the labels for each square.
     """
-    # print("Classifying test feature vectors (in board mode)...")
+    # Obtain list of labeled feature vectors from classify_squares
     label_list = classify_squares(fvectors_test, model)
-    board_list = np.array_split(label_list, 25)
-    
+
+    # Divide list of labeled feature vectors into each board for easier classification
+    # Since label_list contains 1600 feature vectors, 1600 / 64 = 25 boards which corresponds to the amount of images used for testing
+    board_list = np.array_split(label_list, len(label_list) // 64)
+
+    # Derive the second most common label via the same classify function
+    fvectors_train = np.array(model["fvectors_train"])
+    labels_train = np.array(model["labels_train"])
+    second_nearest_list = classify(fvectors_train, labels_train, fvectors_test, True)
+
+    # Iterate through each board
     for indexBoard, board in enumerate(board_list):
+        # Iterate through pieces of each board
         for indexPiece, piece in enumerate(board):
             counts = Counter(board)
-            # if counts['K'] > 1 or counts['k'] > 1 or counts['Q'] > 1 or counts['q'] > 1 or counts['R'] > 2 or counts['r'] > 2 or counts['N'] > 2 or counts['n'] > 2 or counts['B'] > 2 or counts['b'] > 2 or counts['P'] > 8 or counts['p'] > 8:
-            if counts['R'] > 2 and piece == 'R':
-                label_list[64 * indexBoard + indexPiece] = 'p'
-                board[indexPiece] = "p"
-            if counts['N'] > 2 and piece == 'N':
-                label_list[64 * indexBoard + indexPiece] = 'R'
-                board[indexPiece] = "R"
-            if counts['R'] > 2 and piece == 'R':
-                label_list[64 * indexBoard + indexPiece] = 'B'
-                board[indexPiece] = "B"
-            if counts['K'] > 2 and piece == 'K':
-                label_list[64 * indexBoard + indexPiece] = 'q'
-                board[indexPiece] = "q"
-            if counts['P'] > 8 and piece == 'P':
-                label_list[64 * indexBoard + indexPiece] = 'B'
-                board[indexPiece] = "B"
+            # If a white pawn is on the first row of the board or if a black pawn is on the last row of the board, 
+            # it is likely a misclassification, therefore apply the second most common label to this feature vector.
+            if (indexPiece < 8 and piece == 'p') or (indexPiece > 55 and piece == 'P'):
+                label_list[64 * indexBoard + indexPiece] = second_nearest_list[64 * indexBoard + indexPiece]
+
+            # If each team has more than 1 King, 2 Rooks, Knights, Bishops or 8 Pawns, it is highly likely to be a misclassification.
+            if (counts[piece] > 1 and piece in 'Kk') or (counts[piece] > 2 and piece in 'RNBrnb') or (counts[piece] > 8 and piece in 'Pp'):
+                label_list[64 * indexBoard + indexPiece] = second_nearest_list[64 * indexBoard + indexPiece]
+
+            # If the white team has more than 16 pieces on the board, there is likely to be a misclassification.
+            if (counts[piece] > 16 and piece in "KQRNBP"):
+                label_list[64 * indexBoard + indexPiece] = second_nearest_list[64 * indexBoard + indexPiece]                   
+            
+            # If the black team has more than 16 pieces on the board, there is likely to be a misclassification.
+            if (counts[piece] > 16 and piece in 'kqrnbp'):
+                label_list[64 * indexBoard + indexPiece] = second_nearest_list[64 * indexBoard + indexPiece]     
     
     return label_list
